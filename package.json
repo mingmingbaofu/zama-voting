@@ -1,0 +1,49 @@
+{
+  "name": "zama-confidential-voting",
+  "version": "1.0.0",
+  "description": "A confidential voting DApp built with FHEVM for Zama Builder program",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy": "npx hardhat run scripts/deploy.js",
+    "deploy:zama": "npx hardhat run scripts/deploy.js --network zama",
+    "node": "npx hardhat node",
+    "verify": "npx hardhat verify",
+    "frontend": "npx http-server . -o",
+    "clean": "npx hardhat clean"
+  },
+  "keywords": [
+    "fhevm",
+    "confidential",
+    "voting",
+    "blockchain",
+    "privacy",
+    "zama"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.3.1"
+  },
+  "dependencies": {
+    "fhevm": "^0.4.0",
+    "fhevmjs": "^0.4.0",
+    "ethers": "^6.8.0",
+    "web3": "^4.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/zama-confidential-voting.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/zama-confidential-voting/issues"
+  },
+  "homepage": "https://github.com/yourusername/zama-confidential-voting#readme"
+} 
