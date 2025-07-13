@@ -89,7 +89,7 @@ contract ConfidentialVoting {
         string memory description,
         uint256 duration,
         string[] memory optionNames
-    ) external onlyAdmin returns (uint256) {
+    ) external returns (uint256) {
         require(optionNames.length > 1, "Must have at least 2 options");
         require(duration > 0, "Duration must be positive");
         

@@ -1,7 +1,7 @@
 // 合约配置文件
 const CONTRACT_CONFIG = {
     // 部署在Sepolia测试网的合约地址
-    ADDRESS: "0xaE23909118B4BaD33ffbA899f8E0Ad8574AC272f",
+    ADDRESS: "0xB92EADF9E473679714Cc3074eD8B14E774970008",
     
     // 网络配置
     NETWORK: {

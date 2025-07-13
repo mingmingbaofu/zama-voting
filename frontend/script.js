@@ -178,7 +178,7 @@ function updateWalletUI(network, balance) {
         elements.accountBalance.textContent = utils.formatBalance(ethers.formatEther(balance));
     }
     if (elements.connectWallet) {
-        elements.connectWallet.textContent = isAdmin ? "已连接 (管理员)" : "已连接";
+        elements.connectWallet.textContent = "已连接";
         elements.connectWallet.disabled = true;
     }
 }
@@ -186,7 +186,7 @@ function updateWalletUI(network, balance) {
 // 更新UI可见性
 function updateUIVisibility() {
     if (elements.adminPanel) {
-        elements.adminPanel.style.display = isAdmin ? 'block' : 'none';
+        elements.adminPanel.style.display = 'block'; // 允许所有人创建投票会话
     }
 }
 
@@ -310,11 +310,6 @@ function selectSession(sessionId) {
 
 // 创建投票会话
 async function createVotingSession() {
-    if (!isAdmin) {
-        utils.showNotification("只有管理员可以创建投票会话", "error");
-        return;
-    }
-    
     try {
         const title = document.getElementById('sessionTitle').value.trim();
         const description = document.getElementById('sessionDescription').value.trim();
