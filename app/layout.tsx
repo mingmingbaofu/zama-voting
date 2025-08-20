@@ -75,7 +75,7 @@ export default function RootLayout({
             <footer className="bg-white border-t mt-16">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="text-center text-gray-600">
-                  <p className="mb-2">Powered by Zama\'s Fully Homomorphic Encryption</p>
+                  <p className="mb-2">Powered by Zama&apos;s Fully Homomorphic Encryption</p>
                   <p className="text-sm">Your votes are encrypted and remain private throughout the entire process</p>
                 </div>
               </div>

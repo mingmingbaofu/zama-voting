@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { useAccount } from 'wagmi'
 import { PollList } from './components/PollList'
@@ -28,12 +28,7 @@ export default function HomePage() {
   const [polls, setPolls] = useState<Poll[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Load polls from contract
-    loadPolls()
-  }, [isConnected])
-
-  const loadPolls = async () => {
+  const loadPolls = useCallback(async () => {
     setLoading(true)
     try {
       console.log('Loading polls...', { isConnected })
@@ -74,7 +69,12 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isConnected])
+
+  useEffect(() => {
+    // Load polls from contract
+    loadPolls()
+  }, [loadPolls])
 
   const handlePollCreated = (newPoll: any) => {
     setPolls(prev => [newPoll, ...prev])
@@ -94,7 +94,7 @@ export default function HomePage() {
           Privacy-First Voting Platform
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-          Vote with complete privacy using Zama's Fully Homomorphic Encryption. 
+          Vote with complete privacy using Zama&apos;s Fully Homomorphic Encryption. 
           Your choices remain encrypted throughout the entire voting process.
         </p>
         
