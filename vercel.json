@@ -1,0 +1,28 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "env": {
+    "NEXT_PUBLIC_CONTRACT_ADDRESS": "@contract_address",
+    "NEXT_PUBLIC_CHAIN_ID": "@chain_id"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_CONTRACT_ADDRESS": "@contract_address",
+      "NEXT_PUBLIC_CHAIN_ID": "@chain_id"
+    }
+  },
+  "functions": {
+    "app/**/*.{js,ts,tsx}": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}

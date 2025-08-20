@@ -79,6 +79,9 @@
     "contracts"
   ],
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "clean": "rimraf ./fhevmTemp ./artifacts ./cache ./coverage ./types ./coverage.json ./dist && npm run typechain",
     "compile": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat compile",
     "coverage": "cross-env SOLIDITY_COVERAGE=true hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles \"test/**/*.ts\" && npm run typechain",
@@ -92,8 +95,7 @@
     "test:sepolia": "hardhat test --network sepolia",
     "deploy": "hardhat deploy --network sepolia",
     "build:ts": "tsc --project tsconfig.json",
-    "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
-    "dev": "next dev"
+    "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
   },
   "overrides": {
     "ws@>=7.0.0 <7.5.10": ">=7.5.10",
