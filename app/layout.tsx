@@ -27,7 +27,7 @@ export default function RootLayout({
           type="module" 
           dangerouslySetInnerHTML={{
             __html: `
-              import { initSDK, createInstance, SepoliaConfig } from "https://cdn.zama.ai/relayer-sdk-js/0.1.0-9/relayer-sdk-js.js";
+              import { initSDK, createInstance, SepoliaConfig } from "https://cdn.zama.ai/relayer-sdk-js/0.1.2/relayer-sdk-js.js";
               
               window.zamaSDK = {
                 initSDK,
