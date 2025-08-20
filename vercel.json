@@ -14,11 +14,7 @@
       "NEXT_PUBLIC_CHAIN_ID": "11155111"
     }
   },
-  "functions": {
-    "app/**/*.{js,ts,tsx}": {
-      "runtime": "nodejs20.x"
-    }
-  },
+
   "rewrites": [
     {
       "source": "/(.*)",
