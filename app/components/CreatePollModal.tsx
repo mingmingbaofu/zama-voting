@@ -187,8 +187,9 @@ export function CreatePollModal({ isOpen, onClose, onPollCreated }: CreatePollMo
               type="text"
               value={formData.title}
               onChange={(e) => {
-                console.log('Title change:', e.target.value);
-                handleInputChange('title', e.target.value);
+                const value = (e.target as HTMLInputElement).value;
+                console.log('Title change:', value);
+                handleInputChange('title', value);
               }}
               placeholder="Enter a clear and concise poll title"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white"
@@ -208,8 +209,9 @@ export function CreatePollModal({ isOpen, onClose, onPollCreated }: CreatePollMo
             <textarea
               value={formData.description}
               onChange={(e) => {
-                console.log('Description change:', e.target.value);
-                handleInputChange('description', e.target.value);
+                const value = (e.target as HTMLTextAreaElement).value;
+                console.log('Description change:', value);
+                handleInputChange('description', value);
               }}
               placeholder="Provide more details about what you're asking"
               rows={3}
@@ -235,8 +237,9 @@ export function CreatePollModal({ isOpen, onClose, onPollCreated }: CreatePollMo
                       type="text"
                       value={option}
                       onChange={(e) => {
-                        console.log('Input change:', e.target.value);
-                        handleOptionChange(index, e.target.value);
+                        const value = (e.target as HTMLInputElement).value;
+                        console.log('Option change:', index, value);
+                        handleOptionChange(index, value);
                       }}
                       placeholder={`Option ${index + 1}`}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white"
@@ -281,7 +284,10 @@ export function CreatePollModal({ isOpen, onClose, onPollCreated }: CreatePollMo
               <input
                 type="number"
                 value={formData.duration}
-                onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                const value = (e.target as HTMLInputElement).value;
+                handleInputChange('duration', parseInt(value) || 1);
+              }}
                 min="1"
                 max="168" // 1 week
                 className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 bg-white"

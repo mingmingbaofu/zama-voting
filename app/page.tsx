@@ -8,12 +8,24 @@ import { CreatePollModal } from './components/CreatePollModal'
 import { VotingStats } from './components/VotingStats'
 // Enable contract imports to get data from blockchain
 import { contractService, initializeContract, getAllPolls } from '@/lib/contract'
+
+// Poll interface
+interface Poll {
+  id: number
+  title: string
+  description: string
+  options: string[]
+  endTime: number
+  isActive: boolean
+  creator: string
+  totalVotes: number
+}
 import { Plus, Vote, Shield, Lock } from 'lucide-react'
 
 export default function HomePage() {
   const { isConnected } = useAccount()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [polls, setPolls] = useState([])
+  const [polls, setPolls] = useState<Poll[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

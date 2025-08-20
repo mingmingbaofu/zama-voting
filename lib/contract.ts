@@ -8,7 +8,7 @@ declare global {
 }
 
 // Contract ABI (simplified for demo)
-const CONTRACT_ABI = [
+const CONTRACT_ABI: any[] = [
   {
     "inputs": [],
     "name": "HandlesAlreadySavedForRequestID",
