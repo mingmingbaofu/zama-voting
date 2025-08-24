@@ -4,17 +4,6 @@
   "framework": "nextjs",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
-  "env": {
-    "NEXT_PUBLIC_CONTRACT_ADDRESS": "0xaDe53C112C18942BA346aE971F91Afdb8a45FE87",
-    "NEXT_PUBLIC_CHAIN_ID": "11155111"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_CONTRACT_ADDRESS": "0xaDe53C112C18942BA346aE971F91Afdb8a45FE87",
-      "NEXT_PUBLIC_CHAIN_ID": "11155111"
-    }
-  },
-
   "rewrites": [
     {
       "source": "/(.*)",
