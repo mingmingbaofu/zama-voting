@@ -90,7 +90,7 @@ export function CreatePollModal({ isOpen, onClose, onPollCreated }: CreatePollMo
       }
 
       // Initialize contract if not already done
-      const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0xaDe53C112C18942BA346aE971F91Afdb8a45FE87'
+      const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
       if (!contractAddress) {
         setError('Contract address not configured')
         return

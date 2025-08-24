@@ -110,6 +110,31 @@ const CONTRACT_ABI: any[] = [
       },
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32[]",
+        "name": "counts",
+        "type": "uint32[]"
+      }
+    ],
+    "name": "ResultsDecrypted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "pollId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "voter",
         "type": "address"
@@ -124,6 +149,11 @@ const CONTRACT_ABI: any[] = [
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "counts",
+        "type": "uint32[]"
       },
       {
         "internalType": "bytes[]",
@@ -304,15 +334,34 @@ const CONTRACT_ABI: any[] = [
         "internalType": "uint256",
         "name": "pollId",
         "type": "uint256"
+      }
+    ],
+    "name": "getPollStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "pendingDecrypt",
+        "type": "bool"
       },
       {
         "internalType": "uint256",
-        "name": "optionId",
+        "name": "latestRequestId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pollId",
         "type": "uint256"
       },
       {
-        "internalType": "externalEuint32",
-        "name": "encryptedVote",
+        "internalType": "externalEuint8",
+        "name": "encryptedChoice",
         "type": "bytes32"
       },
       {
@@ -344,6 +393,7 @@ class ContractService {
   private provider: ethers.BrowserProvider | null = null
   private signer: ethers.Signer | null = null
   private contractAddress: string | null = null
+  private eventListeners: Map<string, (...args: any[]) => void> = new Map()
 
   async initialize(contractAddress: string) {
     try {
@@ -412,18 +462,18 @@ class ContractService {
       // Initialize FHE if not already done
       const userAddress = await this.signer!.getAddress()
 
-      // Encrypt the vote (1 for selected option)
-      const encryptedVote = await instance.createEncryptedInput(this.contractAddress,
+      // Encrypt the selected option index (0, 1, 2, etc.)
+      const encryptedChoice = await instance.createEncryptedInput(this.contractAddress,
         userAddress,
       )
-        .add32(1)
+        .add8(optionId)
         .encrypt();
-      if (!encryptedVote) {
-        throw new Error('Failed to encrypt vote')
+      if (!encryptedChoice) {
+        throw new Error('Failed to encrypt choice')
       }
 
-      // For now, use the encrypted data and proof directly since we're using mock implementation
-      const tx = await this.contract.vote(pollId, optionId, encryptedVote.handles[0], encryptedVote.inputProof)
+      // Call vote function with pollId, encrypted choice, and input proof
+      const tx = await this.contract.vote(pollId, encryptedChoice.handles[0], encryptedChoice.inputProof)
       await tx.wait()
       
       console.log('Vote submitted successfully')
@@ -531,12 +581,111 @@ class ContractService {
     }
   }
 
+  async getPollStatus(pollId: number): Promise<{ pendingDecrypt: boolean; latestRequestId: number } | null> {
+    if (!this.contract) {
+      console.error('Contract not initialized')
+      return null
+    }
+
+    try {
+      const result = await this.contract.getPollStatus(pollId)
+      return {
+        pendingDecrypt: result.pendingDecrypt,
+        latestRequestId: Number(result.latestRequestId)
+      }
+    } catch (error) {
+      console.error('Failed to get poll status:', error)
+      return null
+    }
+  }
+
   getContractAddress(): string | null {
     return this.contractAddress
   }
 
   isInitialized(): boolean {
     return this.contract !== null
+  }
+
+  // Event listener methods
+  onResultsDecrypted(callback: (pollId: number, requestId: number, counts: number[]) => void): void {
+    if (!this.contract) {
+      console.error('Contract not initialized')
+      return
+    }
+
+    const eventName = 'ResultsDecrypted'
+    
+    // Remove existing listener if any
+    if (this.eventListeners.has(eventName)) {
+      this.contract.off(eventName, this.eventListeners.get(eventName)!)
+    }
+
+    // Create new listener
+    const listener = (pollId: any, requestId: any, counts: any) => {
+      callback(Number(pollId), Number(requestId), counts.map((c: any) => Number(c)))
+    }
+
+    // Add listener
+    this.contract.on(eventName, listener)
+    this.eventListeners.set(eventName, listener)
+  }
+
+  onVoteCast(callback: (pollId: number, voter: string) => void): void {
+    if (!this.contract) {
+      console.error('Contract not initialized')
+      return
+    }
+
+    const eventName = 'VoteCast'
+    
+    // Remove existing listener if any
+    if (this.eventListeners.has(eventName)) {
+      this.contract.off(eventName, this.eventListeners.get(eventName)!)
+    }
+
+    // Create new listener
+    const listener = (pollId: any, voter: string) => {
+      callback(Number(pollId), voter)
+    }
+
+    // Add listener
+    this.contract.on(eventName, listener)
+    this.eventListeners.set(eventName, listener)
+  }
+
+  onPollCreated(callback: (pollId: number, title: string, creator: string) => void): void {
+    if (!this.contract) {
+      console.error('Contract not initialized')
+      return
+    }
+
+    const eventName = 'PollCreated'
+    
+    // Remove existing listener if any
+    if (this.eventListeners.has(eventName)) {
+      this.contract.off(eventName, this.eventListeners.get(eventName)!)
+    }
+
+    // Create new listener
+    const listener = (pollId: any, title: string, creator: string) => {
+      callback(Number(pollId), title, creator)
+    }
+
+    // Add listener
+    this.contract.on(eventName, listener)
+    this.eventListeners.set(eventName, listener)
+  }
+
+  removeAllEventListeners(): void {
+    if (!this.contract) return
+
+    // Remove all event listeners
+    this.eventListeners.forEach((listener, eventName) => {
+      this.contract!.off(eventName, listener)
+    })
+    
+    this.eventListeners.clear()
   }
 }
 
@@ -570,4 +719,25 @@ export const checkUserVoted = async (pollId: number, userAddress: string) => {
 
 export const requestPollResults = async (pollId: number) => {
   return await contractService.requestResults(pollId)
+}
+
+export const getPollStatus = async (pollId: number) => {
+  return await contractService.getPollStatus(pollId)
+}
+
+// Event listener functions
+export const onResultsDecrypted = (callback: (pollId: number, requestId: number, counts: number[]) => void) => {
+  contractService.onResultsDecrypted(callback)
+}
+
+export const onVoteCast = (callback: (pollId: number, voter: string) => void) => {
+  contractService.onVoteCast(callback)
+}
+
+export const onPollCreated = (callback: (pollId: number, title: string, creator: string) => void) => {
+  contractService.onPollCreated(callback)
+}
+
+export const removeAllEventListeners = () => {
+  contractService.removeAllEventListeners()
 }

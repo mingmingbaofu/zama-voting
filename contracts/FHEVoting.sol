@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint32, ebool, externalEuint32} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint32, euint8, ebool, externalEuint8, externalEuint32} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 contract FHEVoting is SepoliaConfig {
@@ -9,21 +9,24 @@ contract FHEVoting is SepoliaConfig {
         string title;
         string description;
         string[] options;
-        mapping(uint256 => euint32) votes; // optionId => encrypted vote count
-        mapping(address => ebool) hasVoted; // voter => has voted
+        euint32[] encCounts; // encrypted counts
+        mapping(address => bool) hasVoted; // voter => has voted
         uint256 endTime;
         bool isActive;
         address creator;
+        bool pendingDecrypt;
+        uint256 latestRequestId;
     }
 
     mapping(uint256 => Poll) public polls;
+    mapping(uint256 => uint256) public requestIdToPollId; // 关联requestId到pollId
     uint256 public pollCount;
-    uint256 latestRequestId;
     
     event PollCreated(uint256 indexed pollId, string title, address creator);
     event VoteCast(uint256 indexed pollId, address voter);
     event PollEnded(uint256 indexed pollId);
     event ResultsRequested(uint256 indexed pollId, uint256 requestId);
+    event ResultsDecrypted(uint256 indexed pollId, uint256 requestId, uint32[] counts);
 
     modifier onlyActivePoll(uint256 pollId) {
         require(polls[pollId].isActive, "Poll is not active");
@@ -58,33 +61,35 @@ contract FHEVoting is SepoliaConfig {
 
         // Initialize encrypted vote counts to 0
         for (uint256 i = 0; i < options.length; i++) {
-            newPoll.votes[i] = FHE.asEuint32(0);
+            euint32 zeroCount = FHE.asEuint32(0);
+            newPoll.encCounts.push(zeroCount);
+            FHE.allowThis(zeroCount);
         }
 
         emit PollCreated(pollId, title, msg.sender);
         return pollId;
     }
 
-    function vote(uint256 pollId, uint256 optionId, externalEuint32 encryptedVote, bytes calldata inputProof) 
+    function vote(uint256 pollId, externalEuint8 encryptedChoice, bytes calldata inputProof) 
         external 
         onlyActivePoll(pollId) 
     {
         Poll storage poll = polls[pollId];
-        require(optionId < poll.options.length, "Invalid option");
         
-        // Check if user has already voted (this will be encrypted)
-        ebool hasVoted = poll.hasVoted[msg.sender];
-        ebool canVote = FHE.not(hasVoted);
+        require(!poll.hasVoted[msg.sender], "already voted");
         
-        // Convert input to encrypted uint32 (should be 1 for the selected option)
-        euint32 voteVal = FHE.fromExternal(encryptedVote, inputProof);
+        // Convert input to encrypted uint8 (should be 1 for the selected option)
+        euint8 choice = FHE.fromExternal(encryptedChoice, inputProof);
 
-        // Only add vote if user hasn't voted before
-        euint32 validVote = FHE.select(canVote, voteVal, FHE.asEuint32(0));
-        poll.votes[optionId] = FHE.add(poll.votes[optionId], validVote);
+        for (uint256 i = 0; i < poll.options.length; i++) {
+            ebool isI = FHE.eq(choice, FHE.asEuint8(uint8(i)));
+            euint32 inc = FHE.select(isI, FHE.asEuint32(1), FHE.asEuint32(0));
+            poll.encCounts[i] = FHE.add(poll.encCounts[i], inc);
+            FHE.allowThis(poll.encCounts[i]);
+        }
         
         // Mark user as having voted
-        poll.hasVoted[msg.sender] = FHE.asEbool(true);
+        poll.hasVoted[msg.sender] = true;
         
         emit VoteCast(pollId, msg.sender);
     }
@@ -96,29 +101,50 @@ contract FHEVoting is SepoliaConfig {
 
     function requestResults(uint256 pollId) external onlyPollCreator(pollId) returns (uint256) {
         require(!polls[pollId].isActive || block.timestamp >= polls[pollId].endTime, "Poll is still active");
-        
+        require(!polls[pollId].pendingDecrypt, "pending");
+
         Poll storage poll = polls[pollId];
-        bytes32[] memory encryptedResults = new bytes32[](poll.options.length);
+        bytes32[] memory cts = new bytes32[](poll.options.length);
         
         for (uint256 i = 0; i < poll.options.length; i++) {
-            encryptedResults[i] = FHE.toBytes32(poll.votes[i]);
+            cts[i] = FHE.toBytes32(poll.encCounts[i]);
         }
         
-        latestRequestId = FHE.requestDecryption(
-            encryptedResults,
+        poll.latestRequestId = FHE.requestDecryption(
+            cts,
             this.callbackResults.selector
         );
         
-        emit ResultsRequested(pollId, latestRequestId);
-        return latestRequestId;
+        // 建立requestId到pollId的映射
+        requestIdToPollId[poll.latestRequestId] = pollId;
+        
+        emit ResultsRequested(pollId, poll.latestRequestId);
+        poll.pendingDecrypt = true;
+        return poll.latestRequestId;
     }
 
-    // I don’t know how to define the function because the number of votes in the Pool is uncertain.
+    // 回调函数处理解密结果
     function callbackResults(
-        uint256 requestId, bytes[] memory signatures
+        uint256 requestId, uint32[] memory counts, bytes[] memory signatures
     ) external {
-        require(requestId == latestRequestId, "Invalid requestId");
+        // 通过requestId找到对应的pollId
+        uint256 pollId = requestIdToPollId[requestId];
+        require(pollId < pollCount, "Invalid poll");
+        
+        Poll storage poll = polls[pollId];
+        require(requestId == poll.latestRequestId, "Invalid requestId");
+        require(poll.pendingDecrypt, "No pending decryption");
+        
         FHE.checkSignatures(requestId, signatures);
+        
+        // 处理解密后的投票结果
+        require(counts.length == poll.options.length, "Counts length mismatch");
+        
+        // 清除待解密状态
+        poll.pendingDecrypt = false;
+        
+        // 可以在这里添加事件来通知前端结果已准备好
+        emit ResultsDecrypted(pollId, requestId, counts);
     }
 
     function getPollInfo(uint256 pollId) external view returns (
@@ -137,6 +163,17 @@ contract FHEVoting is SepoliaConfig {
             poll.endTime,
             poll.isActive,
             poll.creator
+        );
+    }
+
+    function getPollStatus(uint256 pollId) external view returns (
+        bool pendingDecrypt,
+        uint256 latestRequestId
+    ) {
+        Poll storage poll = polls[pollId];
+        return (
+            poll.pendingDecrypt,
+            poll.latestRequestId
         );
     }
 }
